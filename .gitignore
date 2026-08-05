@@ -1,46 +1,153 @@
-# Byte-compiled / optimized / DLL files
+# File: .gitignore
+# Project: NeuroFlow AI
+
+# ------------------------------------------------------------------------------
+# Python & Bytecode
+# ------------------------------------------------------------------------------
 __pycache__/
 *.py[cod]
 *$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
 
-# Python Virtual Environments
+# ------------------------------------------------------------------------------
+# Virtual Environments
+# ------------------------------------------------------------------------------
 .venv/
 venv/
 ENV/
 env/
+env.bak/
+venv.bak/
+.uv/
 
-# Node / Frontend
+# ------------------------------------------------------------------------------
+# Testing, Coverage & Quality Tools
+# ------------------------------------------------------------------------------
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.importlinter
+.coverage
+.coverage.*
+htmlcov/
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.nox/
+.tox/
+
+# ------------------------------------------------------------------------------
+# Node.js & Web (Frontend / Next.js)
+# ------------------------------------------------------------------------------
 node_modules/
 .next/
 out/
-build/
-dist/
-.npm
-*.log
+.nuxt/
+.vuepress/dist
+.cache/
+.parcel-cache/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
 
-# Environment & Secrets
+# ------------------------------------------------------------------------------
+# Environment Variables & Secrets
+# ------------------------------------------------------------------------------
 .env
 .env.local
-.env.*.local
+.env.development.local
+.env.test.local
+.env.production.local
 *.pem
 *.key
+*.p12
+*.pfx
+secrets.yaml
+secrets.json
 
-# IDE & Editors
+# ------------------------------------------------------------------------------
+# IDEs & Code Editors
+# ------------------------------------------------------------------------------
+# PyCharm / JetBrains
 .idea/
-*.swp
-*.swo
-*~
+
+# VS Code (ignore workspace state, allow shared recommendations)
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# Eclipse / NetBeans / Sublime
+.project
+.pydevproject
+.settings/
+*.sublime-workspace
+*.sublime-project
+
+# ------------------------------------------------------------------------------
+# Operating System Files
+# ------------------------------------------------------------------------------
+# macOS
 .DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
 
-# Testing & Coverage
-.coverage
-htmlcov/
-.pytest_cache/
-coverage/
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+*.stackdump
 
-# Temporary / OS
-tmp/
-*.tmp
+# Linux
+*~
+.directory
+
+# ------------------------------------------------------------------------------
+# Docker, Logs & Persistence
+# ------------------------------------------------------------------------------
+*.log
+logs/
+*.sqlite
+*.sqlite3
+*.db
+docker/data/
+docker/postgres_data/
+docker/redis_data/
+docker/qdrant_data/
+docker/neo4j_data/
+
+# ------------------------------------------------------------------------------
+# AI Models & Datasets Cache
+# ------------------------------------------------------------------------------
+.cache/huggingface/
+.cache/torch/
+datasets/scratch/
+examples/scratch/
