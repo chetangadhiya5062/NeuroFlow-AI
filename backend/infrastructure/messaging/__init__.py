@@ -1,1 +1,1 @@
-"""Messaging and Event Bus Infrastructure Adapters (Redis Streams, Kafka) for NeuroFlow AI."""
+"""Layer 1 Infrastructure Messaging and Event Bus Adapters for NeuroFlow AI."""

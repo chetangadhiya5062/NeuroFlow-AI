@@ -1,1 +1,1 @@
-"""Vector Database Infrastructure Adapters (Qdrant, pgvector) for NeuroFlow AI."""
+"""Layer 1 Infrastructure Vector Database Adapters for NeuroFlow AI."""

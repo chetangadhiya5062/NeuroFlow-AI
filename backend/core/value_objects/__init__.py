@@ -1,1 +1,1 @@
-"""Immutable Value Objects for NeuroFlow AI Layer 0 Core."""
+"""Layer 0 Core Immutable Value Objects for NeuroFlow AI."""

@@ -1,1 +1,1 @@
-"""Layer 0 Core Domain Contracts, Ports, Entities, and Value Objects for NeuroFlow AI."""
+"""Layer 0 Core Domain Layer for NeuroFlow AI."""

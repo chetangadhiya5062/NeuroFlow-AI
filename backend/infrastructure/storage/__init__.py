@@ -1,1 +1,1 @@
-"""Object Storage Infrastructure Adapters (S3, Azure Blob) for NeuroFlow AI."""
+"""Layer 1 Infrastructure Object Storage Adapters for NeuroFlow AI."""

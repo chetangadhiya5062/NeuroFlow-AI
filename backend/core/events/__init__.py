@@ -1,1 +1,1 @@
-"""Domain Event Types for NeuroFlow AI Layer 0 Core."""
+"""Layer 0 Core Domain Event Schemas for NeuroFlow AI."""

@@ -1,1 +1,1 @@
-"""Platform Base Exception Hierarchy for NeuroFlow AI Layer 0 Core."""
+"""Layer 0 Core Base Exception Hierarchy for NeuroFlow AI."""

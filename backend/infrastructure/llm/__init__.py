@@ -1,1 +1,1 @@
-"""LLM Provider Infrastructure Adapters (OpenAI, Anthropic, Ollama) for NeuroFlow AI."""
+"""Layer 1 Infrastructure LLM Provider Adapters for NeuroFlow AI."""

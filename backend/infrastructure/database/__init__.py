@@ -1,1 +1,1 @@
-"""Relational Database Infrastructure Adapters (PostgreSQL) for NeuroFlow AI."""
+"""Layer 1 Infrastructure PostgreSQL Database Adapters for NeuroFlow AI."""

@@ -3,16 +3,32 @@ File: backend/infrastructure/README.md
 Project: NeuroFlow AI
 -->
 
-# Backend - Infrastructure Layer (`backend/infrastructure/`)
+# Layer 1 Infrastructure Adapters (`backend/infrastructure/`)
 
 ## Purpose
-The `infrastructure` directory houses Layer 1 concrete adapters implementing Layer 0 abstract port contracts (`IXxxPort`).
+Serves as Clean Architecture Layer 1, containing technical adapter implementations of abstract port contracts defined in Layer 0 (`backend/core/ports/`).
 
-## Infrastructure Packages
-- **[`database/`](file:///d:/Ghanu_Study/Varnagi_Learning/Projects/GitHub/Internship-Project/NeuroFlow-AI/backend/infrastructure/database/README.md)**: PostgreSQL ORM models, migrations, and repositories.
-- **[`cache/`](file:///d:/Ghanu_Study/Varnagi_Learning/Projects/GitHub/Internship-Project/NeuroFlow-AI/backend/infrastructure/cache/README.md)**: Redis caching and state persistence adapters.
-- **[`vector_store/`](file:///d:/Ghanu_Study/Varnagi_Learning/Projects/GitHub/Internship-Project/NeuroFlow-AI/backend/infrastructure/vector_store/README.md)**: Qdrant, pgvector, and memory vector store adapters.
-- **[`graph_store/`](file:///d:/Ghanu_Study/Varnagi_Learning/Projects/GitHub/Internship-Project/NeuroFlow-AI/backend/infrastructure/graph_store/README.md)**: Neo4j and memory graph database adapters.
-- **[`llm/`](file:///d:/Ghanu_Study/Varnagi_Learning/Projects/GitHub/Internship-Project/NeuroFlow-AI/backend/infrastructure/llm/README.md)**: OpenAI, Anthropic, and Ollama LLM provider adapters.
-- **[`messaging/`](file:///d:/Ghanu_Study/Varnagi_Learning/Projects/GitHub/Internship-Project/NeuroFlow-AI/backend/infrastructure/messaging/README.md)**: Redis Streams, Kafka event bus, and task queue adapters.
-- **[`storage/`](file:///d:/Ghanu_Study/Varnagi_Learning/Projects/GitHub/Internship-Project/NeuroFlow-AI/backend/infrastructure/storage/README.md)**: S3, Azure Blob, and local file storage adapters.
+## Responsibilities
+- Implement concrete data persistence, caching, vector search, graph traversal, messaging, and LLM communication adapters.
+- Isolate third-party libraries and drivers behind Layer 0 abstract interfaces.
+- Provide `InMemoryXxxAdapter` variants for fast local integration testing.
+
+## Public Interfaces
+- Exposed via subpackages: `backend.infrastructure.database`, `backend.infrastructure.cache`, `backend.infrastructure.vector_store`, `backend.infrastructure.graph_store`, `backend.infrastructure.llm`, `backend.infrastructure.messaging`, `backend.infrastructure.storage`.
+
+## Allowed Dependencies
+- Python standard library.
+- Layer 0 Core contracts (`backend/core/ports/`, `backend/core/entities/`, `backend/core/exceptions/`).
+- Technology-specific client drivers (SQLAlchemy, Redis, Qdrant, Neo4j, Kafka, OpenAI).
+
+## Forbidden Dependencies
+- Layer 3 Platform Runtimes (`backend/*_runtime/`, `backend/workflow_engine/`).
+- Layer 4 Services (`backend/services/`).
+- Layer 5 API Ingress (`backend/api/`).
+
+## Related Documents
+- `docs/architecture/clean-architecture.md`
+- `docs/implementation/implementation-blueprint.md`
+
+## Current Status
+Scaffolded — Adapters to be implemented and contract-tested in Milestone 2.
