@@ -113,7 +113,7 @@ line-ending = "lf"
 # ------------------------------------------------------------------------------
 [tool.mypy]
 python_version = "3.12"
-mypy_path = "backend"
+mypy_path = "."
 strict = true
 warn_unused_ignores = true
 disallow_any_generics = true
