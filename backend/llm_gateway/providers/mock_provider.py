@@ -1,5 +1,6 @@
 """Mock LLM Provider adapter for vertical slice validation and offline testing."""
 
+import re
 from collections.abc import AsyncGenerator
 from uuid import uuid4
 
@@ -25,9 +26,7 @@ class MockLLMProviderAdapter(ILLMProviderAdapter):
         Args:
             response_text: Custom text to return in completion responses.
         """
-        self._response_text = (
-            response_text or "Hello from NeuroFlow AI Mock Provider"
-        )
+        self._response_text = response_text
         self._mock_model = ModelMetadata(
             model_id=ModelIdentifier(name="mock-model", provider="mock"),
             provider_name="mock",
@@ -58,10 +57,33 @@ class MockLLMProviderAdapter(ILLMProviderAdapter):
         Returns:
             Result wrapping mock CompletionResponse.
         """
+        prompt_content = (
+            request.messages[-1].content if request.messages else ""
+        )
+
+        content = self._response_text or "Hello from NeuroFlow AI Mock Provider"
+
+        # Check if prompt contains Tool Result injection
+        if "Tool Result:" in prompt_content:
+            match = re.search(r"Tool Result:\s*([^\n]+)", prompt_content)
+            if match:
+                val = match.group(1).strip()
+                # Format numeric output nicely if possible
+                try:
+                    num_val = int(val) if val.isdigit() else float(val)
+                    formatted_val = (
+                        f"{num_val:,}"
+                        if isinstance(num_val, int)
+                        else str(num_val)
+                    )
+                except ValueError:
+                    formatted_val = val
+                content = f"The calculated result is {formatted_val}."
+
         response = CompletionResponse(
             id=f"mock-{uuid4()}",
             model=request.model,
-            content=self._response_text,
+            content=content,
             usage=UsageInfo(
                 prompt_tokens=10,
                 completion_tokens=10,
@@ -76,18 +98,12 @@ class MockLLMProviderAdapter(ILLMProviderAdapter):
     async def generate_stream(
         self, request: CompletionRequest
     ) -> AsyncGenerator[StreamChunk, None]:
-        """Yield single mock stream chunk.
-
-        Args:
-            request: CompletionRequest payload.
-
-        Yields:
-            StreamChunk containing response text.
-        """
+        """Yield single mock stream chunk."""
+        content = self._response_text or "Hello from NeuroFlow AI Mock Provider"
         yield StreamChunk(
             id=f"mock-stream-{uuid4()}",
             model=request.model,
-            delta_content=self._response_text,
+            delta_content=content,
             finish_reason="stop",
         )
 

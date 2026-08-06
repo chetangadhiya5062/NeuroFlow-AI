@@ -77,22 +77,32 @@ class ProviderResolutionProcessor(IPipelineProcessor):
 
 
 class PromptPlaceholderProcessor(IPipelineProcessor):
-    """Stage 5: Formats prompt text using PromptService and RAG context."""
+    """Stage 5: Formats prompt text using PromptService, RAG, and Tool Runtime."""
 
     def __init__(
         self,
         prompt_service: PromptService | None = None,
         rag_service: Any = None,
+        tool_service: Any = None,
     ) -> None:
-        """Initialize with optional PromptService and RAGService."""
+        """Initialize with optional PromptService, RAGService, and ToolService."""
         self._prompt_service = prompt_service
         self._rag_service = rag_service
+        self._tool_service = tool_service
 
     async def process(self, context: PipelineContext) -> None:
-        """Format prompt text and inject retrieved RAG context chunks if present."""
+        """Format prompt text and inject retrieved RAG / Tool execution results."""
         base_prompt = context.request.prompt.strip()
 
-        # 1. Retrieve RAG context chunks if RAGService is active
+        # 1. Check Tool Runtime execution intent if ToolService is present
+        tool_block = ""
+        if self._tool_service is not None:
+            tool_res = await self._tool_service.process_prompt_tool_intent(base_prompt)
+            if tool_res and tool_res.success:
+                context.metadata["tool_result"] = tool_res.result
+                tool_block = f"\n\nTool Result: {tool_res.result}"
+
+        # 2. Retrieve RAG context chunks if RAGService is active
         retrieved_sources: list[dict[str, Any]] = []
         context_block = ""
         if self._rag_service is not None:
@@ -111,10 +121,8 @@ class PromptPlaceholderProcessor(IPipelineProcessor):
 
         context.metadata["sources"] = retrieved_sources
 
-        # 2. Format final augmented prompt
-        raw_full_prompt = (
-            f"{base_prompt}{context_block}" if context_block else base_prompt
-        )
+        # 3. Format final augmented prompt
+        raw_full_prompt = f"{base_prompt}{tool_block}{context_block}"
 
         if self._prompt_service is not None:
             context.formatted_prompt = (

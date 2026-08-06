@@ -43,14 +43,15 @@ from backend.prompt_runtime import (
 )
 from backend.rag import RAGService
 from backend.services import ChatService
+from backend.tool_runtime import (
+    ToolExecutor,
+    ToolRegistry,
+    ToolService,
+)
 
 
 def configure_logging(settings: Settings) -> None:
-    """Configure structlog and standard library logging based on settings.
-
-    Args:
-        settings: Root platform settings instance.
-    """
+    """Configure structlog and standard library logging based on settings."""
     log_level = getattr(logging, settings.logging.level.upper(), logging.INFO)
 
     renderer: structlog.types.Processor
@@ -78,12 +79,7 @@ def configure_logging(settings: Settings) -> None:
 def register_foundation_services(
     container: ServiceContainer, settings: Settings
 ) -> None:
-    """Register platform configuration and foundation ports in container.
-
-    Args:
-        container: Target ServiceContainer instance.
-        settings: Root platform settings instance.
-    """
+    """Register platform configuration and foundation ports in container."""
     # Register Configuration Provider
     config_provider = PydanticConfigurationProvider(settings)
     container.register_singleton(
@@ -118,6 +114,15 @@ def register_foundation_services(
     conv_service = ConversationService(repository=conv_repo)
     container.register_singleton(ConversationService, instance=conv_service)
 
+    # Register Tool Runtime dependencies
+    tool_registry = ToolRegistry()
+    tool_executor = ToolExecutor(registry=tool_registry)
+    tool_service = ToolService(registry=tool_registry, executor=tool_executor)
+
+    container.register_singleton(ToolRegistry, instance=tool_registry)
+    container.register_singleton(ToolExecutor, instance=tool_executor)
+    container.register_singleton(ToolService, instance=tool_service)
+
     # Register RAG Service
     rag_service = RAGService()
     container.register_singleton(RAGService, instance=rag_service)
@@ -149,7 +154,7 @@ def register_foundation_services(
     container.register_singleton(PromptRegistry, instance=prompt_registry)
     container.register_singleton(PromptService, instance=prompt_service)
 
-    # Register AI Request Pipeline (wired with RAGService)
+    # Register AI Request Pipeline (wired with RAGService and ToolService)
     pipeline = AIRequestPipeline(
         gateway=gateway_service,
         conversation_service=conv_service,
@@ -158,7 +163,11 @@ def register_foundation_services(
             ContextCreationProcessor(),
             ConversationLoadingProcessor(conv_service),
             ProviderResolutionProcessor(),
-            PromptPlaceholderProcessor(prompt_service, rag_service=rag_service),
+            PromptPlaceholderProcessor(
+                prompt_service,
+                rag_service=rag_service,
+                tool_service=tool_service,
+            ),
             LLMInvocationProcessor(gateway_service),
             ResponseProcessingProcessor(),
             ConversationUpdateProcessor(conv_service),
@@ -173,20 +182,12 @@ def register_foundation_services(
 
 
 def register_infrastructure_adapters(container: ServiceContainer) -> None:
-    """Placeholder hook for future infrastructure adapter registrations.
-
-    Args:
-        container: Target ServiceContainer instance.
-    """
+    """Placeholder hook for future infrastructure adapter registrations."""
     pass
 
 
 def register_runtime_engines(container: ServiceContainer) -> None:
-    """Placeholder hook for future Layer 3 platform runtime engine registrations.
-
-    Args:
-        container: Target ServiceContainer instance.
-    """
+    """Placeholder hook for future Layer 3 platform runtime engine registrations."""
     pass
 
 
@@ -194,15 +195,7 @@ def bootstrap_platform(
     container: ServiceContainer | None = None,
     settings: Settings | None = None,
 ) -> tuple[ServiceContainer, Settings]:
-    """Bootstrap platform configuration, logging, and dependency container.
-
-    Args:
-        container: Optional explicit ServiceContainer instance.
-        settings: Optional explicit Settings instance.
-
-    Returns:
-        Tuple of (initialized ServiceContainer, active Settings).
-    """
+    """Bootstrap platform configuration, logging, and dependency container."""
     active_settings = settings or get_settings()
     active_container = container or get_container()
 
