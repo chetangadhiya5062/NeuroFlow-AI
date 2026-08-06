@@ -9,6 +9,7 @@ from backend.core.value_objects import ModelIdentifier
 from backend.llm_gateway import ChatMessage, CompletionRequest
 from backend.pipeline.context import PipelineContext
 from backend.pipeline.response import PipelineResponse
+from backend.prompt_runtime import PromptService
 
 
 class IPipelineProcessor(ABC):
@@ -74,11 +75,20 @@ class ProviderResolutionProcessor(IPipelineProcessor):
 
 
 class PromptPlaceholderProcessor(IPipelineProcessor):
-    """Stage 5: Formats prompt text (placeholder for future Prompt Runtime)."""
+    """Stage 5: Formats prompt text using PromptService."""
+
+    def __init__(self, prompt_service: PromptService | None = None) -> None:
+        """Initialize with optional PromptService."""
+        self._prompt_service = prompt_service
 
     async def process(self, context: PipelineContext) -> None:
-        """Format prompt text."""
-        context.formatted_prompt = context.request.prompt.strip()
+        """Format prompt text using PromptService or standalone string formatting."""
+        if self._prompt_service is not None:
+            context.formatted_prompt = await self._prompt_service.format_user_prompt(
+                context.request.prompt
+            )
+        else:
+            context.formatted_prompt = context.request.prompt.strip()
 
 
 class LLMInvocationProcessor(IPipelineProcessor):

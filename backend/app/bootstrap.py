@@ -19,6 +19,22 @@ from backend.conversation import (
 from backend.core.ports import IConfigurationProvider, ILLMGateway
 from backend.llm_gateway import LLMGatewayService, ProviderFactory
 from backend.pipeline import AIRequestPipeline
+from backend.pipeline.processor import (
+    ContextCreationProcessor,
+    ConversationLoadingProcessor,
+    ConversationUpdateProcessor,
+    FinalResponseProcessor,
+    LLMInvocationProcessor,
+    PromptPlaceholderProcessor,
+    ProviderResolutionProcessor,
+    RequestValidationProcessor,
+    ResponseProcessingProcessor,
+)
+from backend.prompt_runtime import (
+    PromptBuilder,
+    PromptRegistry,
+    PromptService,
+)
 from backend.services import ChatService
 
 
@@ -92,9 +108,35 @@ def register_foundation_services(
     conv_service = ConversationService(repository=conv_repo)
     container.register_singleton(ConversationService, instance=conv_service)
 
+    # Register Prompt Registry and Service
+    prompt_registry = PromptRegistry()
+    default_template = (
+        PromptBuilder("default-chat")
+        .with_system("You are NeuroFlow AI, an enterprise intelligent agent assistant.")
+        .with_user("{prompt}")
+        .build()
+    )
+    prompt_registry.register_template(default_template)
+    prompt_service = PromptService(registry=prompt_registry)
+
+    container.register_singleton(PromptRegistry, instance=prompt_registry)
+    container.register_singleton(PromptService, instance=prompt_service)
+
     # Register AI Request Pipeline
     pipeline = AIRequestPipeline(
-        gateway=gateway_service, conversation_service=conv_service
+        gateway=gateway_service,
+        conversation_service=conv_service,
+        processors=[
+            RequestValidationProcessor(),
+            ContextCreationProcessor(),
+            ConversationLoadingProcessor(conv_service),
+            ProviderResolutionProcessor(),
+            PromptPlaceholderProcessor(prompt_service),
+            LLMInvocationProcessor(gateway_service),
+            ResponseProcessingProcessor(),
+            ConversationUpdateProcessor(conv_service),
+            FinalResponseProcessor(),
+        ],
     )
     container.register_singleton(AIRequestPipeline, instance=pipeline)
 
