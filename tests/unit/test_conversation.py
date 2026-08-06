@@ -10,6 +10,7 @@ from backend.conversation import (
 )
 from backend.llm_gateway import LLMGatewayService
 from backend.llm_gateway.providers import MockLLMProviderAdapter
+from backend.pipeline import AIRequestPipeline
 from backend.services import ChatService
 
 
@@ -57,9 +58,10 @@ async def test_chat_service_records_conversation_history() -> None:
 
     repo = InMemoryConversationRepository()
     conv_service = ConversationService(repository=repo)
-    chat_service = ChatService(
+    pipeline = AIRequestPipeline(
         gateway=gateway, conversation_service=conv_service
     )
+    chat_service = ChatService(pipeline=pipeline)
 
     result = await chat_service.process_chat(message="Hello Conversation")
     assert result.is_success

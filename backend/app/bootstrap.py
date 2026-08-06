@@ -18,6 +18,7 @@ from backend.conversation import (
 )
 from backend.core.ports import IConfigurationProvider, ILLMGateway
 from backend.llm_gateway import LLMGatewayService, ProviderFactory
+from backend.pipeline import AIRequestPipeline
 from backend.services import ChatService
 
 
@@ -91,10 +92,14 @@ def register_foundation_services(
     conv_service = ConversationService(repository=conv_repo)
     container.register_singleton(ConversationService, instance=conv_service)
 
-    # Register Application ChatService
-    chat_service = ChatService(
+    # Register AI Request Pipeline
+    pipeline = AIRequestPipeline(
         gateway=gateway_service, conversation_service=conv_service
     )
+    container.register_singleton(AIRequestPipeline, instance=pipeline)
+
+    # Register Application ChatService delegating to pipeline
+    chat_service = ChatService(pipeline=pipeline)
     container.register_singleton(ChatService, instance=chat_service)
 
 

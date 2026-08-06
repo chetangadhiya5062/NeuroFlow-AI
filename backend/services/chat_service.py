@@ -1,34 +1,26 @@
-"""Application service orchestrating chat execution via LLM Gateway and Conversation."""
+"""Application service orchestrating chat execution via AI Request Pipeline."""
 
-from backend.conversation import ConversationService, MessageRole
-from backend.core.ports import ILLMGateway
-from backend.core.types import Err, ErrorInfo, Result
-from backend.core.value_objects import ModelIdentifier
+from backend.core.types import Err, ErrorInfo, Ok, Result
+from backend.pipeline import AIRequestPipeline, PipelineRequest
 
 
 class ChatService:
     """Application use-case orchestrator service for chat completion processing."""
 
-    def __init__(
-        self,
-        gateway: ILLMGateway,
-        conversation_service: ConversationService | None = None,
-    ) -> None:
-        """Initialize ChatService with LLM Gateway and ConversationService dependencies.
+    def __init__(self, pipeline: AIRequestPipeline) -> None:
+        """Initialize ChatService with AIRequestPipeline dependency.
 
         Args:
-            gateway: ILLMGateway interface implementation.
-            conversation_service: Optional ConversationService instance.
+            pipeline: AIRequestPipeline instance.
         """
-        self._gateway = gateway
-        self._conversation_service = conversation_service
+        self._pipeline = pipeline
 
     async def process_chat(
         self,
         message: str,
         conversation_id: str | None = None,
     ) -> Result[str, ErrorInfo]:
-        """Process chat message, record history in conversation, and generate response.
+        """Process chat message by delegating orchestration to AIRequestPipeline.
 
         Args:
             message: User message prompt string.
@@ -37,54 +29,11 @@ class ChatService:
         Returns:
             Result wrapping LLM text response string or ErrorInfo.
         """
-        if not message or not message.strip():
-            return Err(
-                ErrorInfo(
-                    message="Chat message prompt cannot be empty.",
-                    error_code="VALIDATION_ERROR",
-                )
-            )
-
-        # 1. Manage Conversation sequence if ConversationService is active
-        conv = None
-        if self._conversation_service is not None:
-            if conversation_id:
-                get_res = await self._conversation_service.get_conversation(
-                    conversation_id
-                )
-                if get_res.is_success:
-                    conv = get_res.unwrap()
-                else:
-                    conv = await self._conversation_service.create_conversation(
-                        title="Chat Session"
-                    )
-            else:
-                conv = await self._conversation_service.create_conversation(
-                    title="Chat Session"
-                )
-
-            # Append user message
-            await self._conversation_service.add_message(
-                conversation_id=conv.id,
-                role=MessageRole.USER,
-                content=message,
-            )
-
-        # 2. Execute generation via LLM Gateway
-        model = ModelIdentifier(name="mock-model", provider="mock")
-        llm_result = await self._gateway.generate_text(prompt=message, model=model)
-
-        if not llm_result.is_success:
-            return llm_result
-
-        response_text = llm_result.unwrap()
-
-        # 3. Append assistant response message to conversation
-        if self._conversation_service is not None and conv is not None:
-            await self._conversation_service.add_message(
-                conversation_id=conv.id,
-                role=MessageRole.ASSISTANT,
-                content=response_text,
-            )
-
-        return llm_result
+        request = PipelineRequest(
+            prompt=message,
+            conversation_id=conversation_id,
+        )
+        result = await self._pipeline.execute(request)
+        if result.is_success:
+            return Ok(result.unwrap().content)
+        return Err(result.unwrap_err())
