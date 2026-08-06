@@ -1,1 +1,1 @@
-"""End-to-End Vertical Slice Test Suite."""
+"""E2E tests package placeholder."""

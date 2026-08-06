@@ -1,1 +1,1 @@
-"""Shared Test Fixtures and Factories."""
+"""Test fixtures package placeholder."""

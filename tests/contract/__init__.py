@@ -1,1 +1,1 @@
-"""Contract Conformance Test Suite for IXxxPort Adapters."""
+"""Contract tests package placeholder."""
