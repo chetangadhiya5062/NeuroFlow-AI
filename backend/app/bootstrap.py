@@ -11,6 +11,11 @@ from backend.config import (
     get_container,
     get_settings,
 )
+from backend.conversation import (
+    ConversationService,
+    IConversationRepository,
+    InMemoryConversationRepository,
+)
 from backend.core.ports import IConfigurationProvider, ILLMGateway
 from backend.llm_gateway import LLMGatewayService, ProviderFactory
 from backend.services import ChatService
@@ -78,8 +83,18 @@ def register_foundation_services(
         ILLMGateway, instance=gateway_service  # type: ignore[type-abstract]
     )
 
+    # Register Conversation Repository and Service
+    conv_repo = InMemoryConversationRepository()
+    container.register_singleton(
+        IConversationRepository, instance=conv_repo  # type: ignore[type-abstract]
+    )
+    conv_service = ConversationService(repository=conv_repo)
+    container.register_singleton(ConversationService, instance=conv_service)
+
     # Register Application ChatService
-    chat_service = ChatService(gateway=gateway_service)
+    chat_service = ChatService(
+        gateway=gateway_service, conversation_service=conv_service
+    )
     container.register_singleton(ChatService, instance=chat_service)
 
 
