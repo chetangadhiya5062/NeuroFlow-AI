@@ -59,8 +59,14 @@ class LLMSettings(BaseModel):
     provider: str = Field(default="mock", validation_alias="LLM_PROVIDER")
     default_provider: str = "mock"
     default_model: str = "gpt-4o"
-    openai_api_key: str | None = None
-    anthropic_api_key: str | None = None
+    openai_api_key: str | None = Field(default=None, validation_alias="OPENAI_API_KEY")
+    gemini_api_key: str | None = Field(default=None, validation_alias="GEMINI_API_KEY")
+    anthropic_api_key: str | None = Field(
+        default=None, validation_alias="ANTHROPIC_API_KEY"
+    )
+    ollama_base_url: str = Field(
+        default="http://localhost:11434", validation_alias="OLLAMA_BASE_URL"
+    )
     request_timeout_seconds: int = Field(default=60, ge=1)
     max_retries: int = Field(default=3, ge=0)
 

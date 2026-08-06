@@ -84,7 +84,7 @@ def register_foundation_services(
     )
 
     # Instantiate Provider Factory and target configured LLM provider
-    factory = ProviderFactory()
+    factory = ProviderFactory(settings=settings)
     target_provider_name = settings.llm.provider.lower()
     active_provider = factory.create_provider(target_provider_name)
 

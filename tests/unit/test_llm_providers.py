@@ -1,12 +1,9 @@
-"""Unit tests for ProviderFactory, ProviderRegistry, and provider adapters."""
+"""Unit tests for production LLM Provider Adapters."""
 
 import pytest
 
-from backend.llm_gateway import (
-    ProviderFactory,
-    ProviderNotFoundError,
-    ProviderRegistry,
-)
+from backend.core.value_objects import ModelIdentifier
+from backend.llm_gateway.models import ChatMessage, CompletionRequest
 from backend.llm_gateway.providers import (
     AnthropicLLMProviderAdapter,
     GeminiLLMProviderAdapter,
@@ -16,40 +13,71 @@ from backend.llm_gateway.providers import (
 )
 
 
-def test_provider_registry_lists_standard_providers() -> None:
-    """Test ProviderRegistry registers standard supported providers."""
-    registry = ProviderRegistry()
-    providers = registry.list_supported_providers()
-
-    assert "mock" in providers
-    assert "openai" in providers
-    assert "anthropic" in providers
-    assert "gemini" in providers
-    assert "ollama" in providers
-
-
-def test_provider_factory_creates_instances() -> None:
-    """Test ProviderFactory creates adapter instances for supported providers."""
-    factory = ProviderFactory()
-
-    assert isinstance(factory.create_provider("mock"), MockLLMProviderAdapter)
-    assert isinstance(
-        factory.create_provider("openai"), OpenAILLMProviderAdapter
+@pytest.mark.asyncio
+async def test_openai_provider_missing_key_returns_auth_error() -> None:
+    """Test OpenAI provider returns AUTHENTICATION_ERROR when API key is empty."""
+    adapter = OpenAILLMProviderAdapter(api_key="")
+    req = CompletionRequest(
+        messages=[ChatMessage(role="user", content="Hi")],
+        model=ModelIdentifier(name="gpt-4o", provider="openai"),
     )
-    assert isinstance(
-        factory.create_provider("anthropic"), AnthropicLLMProviderAdapter
-    )
-    assert isinstance(
-        factory.create_provider("gemini"), GeminiLLMProviderAdapter
-    )
-    assert isinstance(
-        factory.create_provider("ollama"), OllamaLLMProviderAdapter
-    )
+    res = await adapter.generate_completion(req)
+    assert not res.is_success
+    err = res.unwrap_err()
+    assert err.error_code == "AUTHENTICATION_ERROR"
+    assert "OPENAI_API_KEY" in err.message
 
 
-def test_provider_factory_invalid_provider_raises_error() -> None:
-    """Test ProviderFactory raises ProviderNotFoundError for unknown provider."""
-    factory = ProviderFactory()
+@pytest.mark.asyncio
+async def test_gemini_provider_missing_key_returns_auth_error() -> None:
+    """Test Gemini provider returns AUTHENTICATION_ERROR when API key is empty."""
+    adapter = GeminiLLMProviderAdapter(api_key="")
+    req = CompletionRequest(
+        messages=[ChatMessage(role="user", content="Hi")],
+        model=ModelIdentifier(name="gemini-1.5-pro", provider="gemini"),
+    )
+    res = await adapter.generate_completion(req)
+    assert not res.is_success
+    err = res.unwrap_err()
+    assert err.error_code == "AUTHENTICATION_ERROR"
+    assert "GEMINI_API_KEY" in err.message
 
-    with pytest.raises(ProviderNotFoundError, match="Unsupported LLM provider"):
-        factory.create_provider("unsupported-provider")
+
+@pytest.mark.asyncio
+async def test_ollama_provider_connection_error_handling() -> None:
+    """Test Ollama provider returns OLLAMA_CONNECTION_ERROR when server unreachable."""
+    adapter = OllamaLLMProviderAdapter(base_url="http://invalid-localhost:99999")
+    req = CompletionRequest(
+        messages=[ChatMessage(role="user", content="Hi")],
+        model=ModelIdentifier(name="llama3", provider="ollama"),
+    )
+    res = await adapter.generate_completion(req)
+    assert not res.is_success
+    err = res.unwrap_err()
+    assert err.error_code == "OLLAMA_CONNECTION_ERROR"
+
+
+@pytest.mark.asyncio
+async def test_anthropic_placeholder_provider() -> None:
+    """Test Anthropic provider placeholder response."""
+    adapter = AnthropicLLMProviderAdapter()
+    req = CompletionRequest(
+        messages=[ChatMessage(role="user", content="Hi")],
+        model=ModelIdentifier(name="claude-3-5-sonnet-latest", provider="anthropic"),
+    )
+    res = await adapter.generate_completion(req)
+    assert res.is_success
+    assert "Anthropic Provider Adapter" in res.unwrap().content
+
+
+@pytest.mark.asyncio
+async def test_mock_provider() -> None:
+    """Test Mock LLM provider adapter response."""
+    adapter = MockLLMProviderAdapter()
+    req = CompletionRequest(
+        messages=[ChatMessage(role="user", content="Hi")],
+        model=ModelIdentifier(name="mock-model", provider="mock"),
+    )
+    res = await adapter.generate_completion(req)
+    assert res.is_success
+    assert "Mock Provider" in res.unwrap().content

@@ -1,4 +1,4 @@
-"""Anthropic LLM Provider adapter implementation stub."""
+"""Anthropic LLM Provider adapter implementation placeholder."""
 
 from collections.abc import AsyncGenerator
 
@@ -16,10 +16,15 @@ from backend.llm_gateway.provider_base import BaseLLMProviderAdapter
 
 
 class AnthropicLLMProviderAdapter(BaseLLMProviderAdapter):
-    """Anthropic LLM provider integration adapter."""
+    """Anthropic LLM provider integration adapter placeholder."""
 
-    def __init__(self) -> None:
-        """Initialize Anthropic provider metadata specifications."""
+    def __init__(self, api_key: str | None = None) -> None:
+        """Initialize Anthropic provider metadata specifications.
+
+        Args:
+            api_key: Optional Anthropic API Key string.
+        """
+        self._api_key = api_key
         self._models = [
             ModelMetadata(
                 model_id=ModelIdentifier(
@@ -48,7 +53,7 @@ class AnthropicLLMProviderAdapter(BaseLLMProviderAdapter):
     async def generate_completion(
         self, request: CompletionRequest
     ) -> Result[CompletionResponse, ErrorInfo]:
-        """Generate Anthropic completion response stub."""
+        """Generate Anthropic completion response stub placeholder."""
         response = CompletionResponse(
             id=self._generate_completion_id("anthropic"),
             model=request.model,
@@ -60,14 +65,14 @@ class AnthropicLLMProviderAdapter(BaseLLMProviderAdapter):
                 estimated_cost=0.0002,
             ),
             finish_reason="stop",
-            raw_response={"provider": "anthropic", "status": "mocked"},
+            raw_response={"provider": "anthropic", "status": "placeholder"},
         )
         return Ok(response)
 
     async def generate_stream(
         self, request: CompletionRequest
     ) -> AsyncGenerator[StreamChunk, None]:
-        """Yield Anthropic response stream chunk stub."""
+        """Yield Anthropic response stream chunk stub placeholder."""
         yield StreamChunk(
             id=self._generate_completion_id("anthropic-stream"),
             model=request.model,
