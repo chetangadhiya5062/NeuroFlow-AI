@@ -45,6 +45,17 @@ class DatabaseSettings(BaseModel):
         )
 
 
+class ConversationSettings(BaseModel):
+    """Conversation persistence configuration settings."""
+
+    storage: Literal["memory", "sqlite"] = Field(
+        default="memory", validation_alias="CONVERSATION_STORAGE"
+    )
+    sqlite_db_path: str = Field(
+        default="./data/conversations.db", validation_alias="SQLITE_DB_PATH"
+    )
+
+
 class LoggingSettings(BaseModel):
     """Platform logging and telemetry settings."""
 
@@ -93,6 +104,7 @@ class Settings(BaseSettings):
     app: AppSettings = Field(default_factory=AppSettings)
     runtime: RuntimeSettings = Field(default_factory=RuntimeSettings)
     database: DatabaseSettings = Field(default_factory=DatabaseSettings)
+    conversation: ConversationSettings = Field(default_factory=ConversationSettings)
     logging: LoggingSettings = Field(default_factory=LoggingSettings)
     llm: LLMSettings = Field(default_factory=LLMSettings)
     features: FeatureFlagSettings = Field(default_factory=FeatureFlagSettings)

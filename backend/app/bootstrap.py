@@ -12,9 +12,9 @@ from backend.config import (
     get_settings,
 )
 from backend.conversation import (
+    ConversationRepositoryFactory,
     ConversationService,
     IConversationRepository,
-    InMemoryConversationRepository,
 )
 from backend.core.ports import IConfigurationProvider, ILLMGateway
 from backend.llm_gateway import LLMGatewayService, ProviderFactory
@@ -100,8 +100,11 @@ def register_foundation_services(
         ILLMGateway, instance=gateway_service  # type: ignore[type-abstract]
     )
 
-    # Register Conversation Repository and Service
-    conv_repo = InMemoryConversationRepository()
+    # Register Conversation Repository via Factory
+    conv_repo = ConversationRepositoryFactory.create_repository(
+        storage_type=settings.conversation.storage,
+        sqlite_db_path=settings.conversation.sqlite_db_path,
+    )
     container.register_singleton(
         IConversationRepository, instance=conv_repo  # type: ignore[type-abstract]
     )
