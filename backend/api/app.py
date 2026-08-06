@@ -31,8 +31,9 @@ def get_application() -> FastAPI:
         title=settings.app.name,
         version=settings.app.version,
         description="Enterprise-grade Modular AI Operating Platform",
-        docs_url="/docs" if settings.app.debug else None,
-        redoc_url="/redoc" if settings.app.debug else None,
+        docs_url="/docs",
+        redoc_url="/redoc",
+        openapi_url="/openapi.json",
         lifespan=platform_lifespan,
     )
 
