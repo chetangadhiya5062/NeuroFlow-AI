@@ -3,6 +3,10 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
+from backend.api.middleware import (
+    ExceptionLoggingMiddleware,
+    LoggingMiddleware,
+)
 from backend.api.routes import api_router
 from backend.app import platform_lifespan
 from backend.config import get_settings
@@ -31,6 +35,10 @@ def get_application() -> FastAPI:
         redoc_url="/redoc" if settings.app.debug else None,
         lifespan=platform_lifespan,
     )
+
+    # Register middlewares
+    app.add_middleware(ExceptionLoggingMiddleware)
+    app.add_middleware(LoggingMiddleware)
 
     # Register API routers
     app.include_router(api_router)
