@@ -18,10 +18,15 @@ from backend.llm_gateway.models import (
     UsageInfo,
 )
 from backend.llm_gateway.provider import ILLMProviderAdapter
+from backend.llm_gateway.provider_base import BaseLLMProviderAdapter
+from backend.llm_gateway.provider_capabilities import ProviderCapability
+from backend.llm_gateway.provider_factory import ProviderFactory
+from backend.llm_gateway.provider_registry import ProviderRegistry
 from backend.llm_gateway.registry import ModelRegistry
 from backend.llm_gateway.router import LLMRouter
 
 __all__ = [
+    "BaseLLMProviderAdapter",
     "ChatMessage",
     "CompletionRequest",
     "CompletionResponse",
@@ -34,7 +39,10 @@ __all__ = [
     "ModelMetadata",
     "ModelNotFoundError",
     "ModelRegistry",
+    "ProviderCapability",
+    "ProviderFactory",
     "ProviderNotFoundError",
+    "ProviderRegistry",
     "ProviderRoutingError",
     "StreamChunk",
     "UsageInfo",

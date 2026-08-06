@@ -12,8 +12,7 @@ from backend.config import (
     get_settings,
 )
 from backend.core.ports import IConfigurationProvider, ILLMGateway
-from backend.llm_gateway import LLMGatewayService
-from backend.llm_gateway.providers import MockLLMProviderAdapter
+from backend.llm_gateway import LLMGatewayService, ProviderFactory
 from backend.services import ChatService
 
 
@@ -62,10 +61,18 @@ def register_foundation_services(
         IConfigurationProvider, instance=config_provider  # type: ignore[type-abstract]
     )
 
-    # Register Mock Provider and LLM Gateway Service
-    mock_provider = MockLLMProviderAdapter()
+    # Instantiate Provider Factory and target configured LLM provider
+    factory = ProviderFactory()
+    target_provider_name = settings.llm.provider.lower()
+    active_provider = factory.create_provider(target_provider_name)
+
     gateway_service = LLMGatewayService()
-    gateway_service.router.register_provider(mock_provider)
+    gateway_service.router.register_provider(active_provider)
+
+    # Ensure Mock provider is also registered if target provider is not mock
+    if target_provider_name != "mock":
+        mock_provider = factory.create_provider("mock")
+        gateway_service.router.register_provider(mock_provider)
 
     container.register_singleton(
         ILLMGateway, instance=gateway_service  # type: ignore[type-abstract]

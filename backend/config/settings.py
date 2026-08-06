@@ -1,4 +1,4 @@
-"""Platform configuration settings models using pydantic-settings."""
+"""Platform configuration settings definitions using Pydantic Settings."""
 
 from functools import lru_cache
 from typing import Literal
@@ -8,22 +8,21 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class AppSettings(BaseModel):
-    """Application metadata settings."""
+    """Application metadata and environment settings."""
 
     name: str = "NeuroFlow AI"
     version: str = "0.1.0"
-    environment: Literal["development", "testing", "staging", "production"] = (
-        "development"
-    )
+    environment: str = "development"
     debug: bool = False
 
 
 class RuntimeSettings(BaseModel):
-    """Execution runtime engine settings."""
+    """Platform runtime execution settings."""
 
-    worker_concurrency: int = Field(default=10, ge=1)
-    task_timeout_seconds: int = Field(default=300, ge=1)
-    max_retry_attempts: int = Field(default=3, ge=0)
+    max_concurrent_agents: int = Field(default=50, ge=1)
+    max_concurrent_workflows: int = Field(default=100, ge=1)
+    default_execution_timeout_seconds: int = Field(default=300, ge=1)
+    enable_hot_reloading: bool = False
 
 
 class DatabaseSettings(BaseModel):
@@ -57,7 +56,8 @@ class LoggingSettings(BaseModel):
 class LLMSettings(BaseModel):
     """LLM Gateway and provider configuration settings."""
 
-    default_provider: str = "openai"
+    provider: str = Field(default="mock", validation_alias="LLM_PROVIDER")
+    default_provider: str = "mock"
     default_model: str = "gpt-4o"
     openai_api_key: str | None = None
     anthropic_api_key: str | None = None
