@@ -1,7 +1,7 @@
 """Application service orchestrating chat execution via AI Request Pipeline."""
 
 from backend.core.types import Err, ErrorInfo, Ok, Result
-from backend.pipeline import AIRequestPipeline, PipelineRequest
+from backend.pipeline import AIRequestPipeline, PipelineRequest, PipelineResponse
 
 
 class ChatService:
@@ -29,11 +29,29 @@ class ChatService:
         Returns:
             Result wrapping LLM text response string or ErrorInfo.
         """
+        res = await self.process_chat_full(
+            message=message, conversation_id=conversation_id
+        )
+        if res.is_success:
+            return Ok(res.unwrap().content)
+        return Err(res.unwrap_err())
+
+    async def process_chat_full(
+        self,
+        message: str,
+        conversation_id: str | None = None,
+    ) -> Result[PipelineResponse, ErrorInfo]:
+        """Process chat message returning complete PipelineResponse payload.
+
+        Args:
+            message: User message prompt string.
+            conversation_id: Optional target conversation ID string.
+
+        Returns:
+            Result wrapping PipelineResponse object or ErrorInfo.
+        """
         request = PipelineRequest(
             prompt=message,
             conversation_id=conversation_id,
         )
-        result = await self._pipeline.execute(request)
-        if result.is_success:
-            return Ok(result.unwrap().content)
-        return Err(result.unwrap_err())
+        return await self._pipeline.execute(request)

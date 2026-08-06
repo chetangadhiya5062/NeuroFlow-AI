@@ -1,6 +1,7 @@
 """Stage processors orchestrating individual AI request pipeline steps."""
 
 from abc import ABC, abstractmethod
+from typing import Any
 
 from backend.conversation import ConversationService, MessageRole
 from backend.core.exceptions import ValidationError
@@ -39,6 +40,7 @@ class ContextCreationProcessor(IPipelineProcessor):
     async def process(self, context: PipelineContext) -> None:
         """Initialize metadata context values."""
         context.metadata["stage"] = "initialized"
+        context.metadata["sources"] = []
 
 
 class ConversationLoadingProcessor(IPipelineProcessor):
@@ -75,20 +77,51 @@ class ProviderResolutionProcessor(IPipelineProcessor):
 
 
 class PromptPlaceholderProcessor(IPipelineProcessor):
-    """Stage 5: Formats prompt text using PromptService."""
+    """Stage 5: Formats prompt text using PromptService and RAG context."""
 
-    def __init__(self, prompt_service: PromptService | None = None) -> None:
-        """Initialize with optional PromptService."""
+    def __init__(
+        self,
+        prompt_service: PromptService | None = None,
+        rag_service: Any = None,
+    ) -> None:
+        """Initialize with optional PromptService and RAGService."""
         self._prompt_service = prompt_service
+        self._rag_service = rag_service
 
     async def process(self, context: PipelineContext) -> None:
-        """Format prompt text using PromptService or standalone string formatting."""
+        """Format prompt text and inject retrieved RAG context chunks if present."""
+        base_prompt = context.request.prompt.strip()
+
+        # 1. Retrieve RAG context chunks if RAGService is active
+        retrieved_sources: list[dict[str, Any]] = []
+        context_block = ""
+        if self._rag_service is not None:
+            rag_res = await self._rag_service.retrieve_context(base_prompt, top_k=3)
+            if rag_res.is_success:
+                matches = rag_res.unwrap()
+                if matches and any(m.score > 0.001 for m in matches):
+                    retrieved_sources = self._rag_service.format_sources(matches)
+                    chunk_texts = [
+                        f"[Source: {m['filename']}]\n{m['text']}"
+                        for m in retrieved_sources
+                    ]
+                    context_block = (
+                        "\n\nContext Information:\n" + "\n---\n".join(chunk_texts)
+                    )
+
+        context.metadata["sources"] = retrieved_sources
+
+        # 2. Format final augmented prompt
+        raw_full_prompt = (
+            f"{base_prompt}{context_block}" if context_block else base_prompt
+        )
+
         if self._prompt_service is not None:
-            context.formatted_prompt = await self._prompt_service.format_user_prompt(
-                context.request.prompt
+            context.formatted_prompt = (
+                await self._prompt_service.format_user_prompt(raw_full_prompt)
             )
         else:
-            context.formatted_prompt = context.request.prompt.strip()
+            context.formatted_prompt = raw_full_prompt
 
 
 class LLMInvocationProcessor(IPipelineProcessor):
@@ -199,4 +232,5 @@ class FinalResponseProcessor(IPipelineProcessor):
             provider_used=context.model_id.provider,
             tokens_used=context.llm_response.usage.total_tokens,
             estimated_cost=context.llm_response.usage.estimated_cost,
+            metadata=dict(context.metadata),
         )

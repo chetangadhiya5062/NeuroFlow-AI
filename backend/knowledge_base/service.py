@@ -1,6 +1,7 @@
 """Knowledge Base domain service orchestrating document ingestion and retrieval."""
 
 import hashlib
+from typing import Any
 
 from backend.core.types import Err, ErrorInfo, Ok, Result
 from backend.core.value_objects import EntityId, TenantId, Timestamp
@@ -20,11 +21,13 @@ class KnowledgeBaseService:
         repository: IKnowledgeBaseRepository,
         storage: LocalFileStorage | None = None,
         parser: DocumentParser | None = None,
+        rag_service: Any = None,
     ) -> None:
         """Initialize KnowledgeBaseService with repository and storage dependencies."""
         self._repository = repository
         self._storage = storage or LocalFileStorage()
         self._parser = parser or DocumentParser()
+        self._rag_service = rag_service
 
     async def ingest_document(
         self,
@@ -79,6 +82,13 @@ class KnowledgeBaseService:
 
             # 5. Persist Document metadata in repository
             await self._repository.save(document)
+
+            # 6. Automatic RAG indexing if RAGService is present
+            if self._rag_service is not None:
+                await self._rag_service.process_and_index_document(
+                    document, content
+                )
+
             return Ok(document)
         except KnowledgeBaseError as exc:
             return Err(

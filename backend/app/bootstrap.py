@@ -41,6 +41,7 @@ from backend.prompt_runtime import (
     PromptRegistry,
     PromptService,
 )
+from backend.rag import RAGService
 from backend.services import ChatService
 
 
@@ -117,10 +118,16 @@ def register_foundation_services(
     conv_service = ConversationService(repository=conv_repo)
     container.register_singleton(ConversationService, instance=conv_service)
 
-    # Register Knowledge Base dependencies
+    # Register RAG Service
+    rag_service = RAGService()
+    container.register_singleton(RAGService, instance=rag_service)
+
+    # Register Knowledge Base dependencies (wired with RAGService)
     kb_repo = KnowledgeBaseRepositoryFactory.create_repository(storage_type="memory")
     kb_storage = LocalFileStorage(base_directory="./data/documents")
-    kb_service = KnowledgeBaseService(repository=kb_repo, storage=kb_storage)
+    kb_service = KnowledgeBaseService(
+        repository=kb_repo, storage=kb_storage, rag_service=rag_service
+    )
 
     container.register_singleton(
         IKnowledgeBaseRepository, instance=kb_repo  # type: ignore[type-abstract]
@@ -142,7 +149,7 @@ def register_foundation_services(
     container.register_singleton(PromptRegistry, instance=prompt_registry)
     container.register_singleton(PromptService, instance=prompt_service)
 
-    # Register AI Request Pipeline
+    # Register AI Request Pipeline (wired with RAGService)
     pipeline = AIRequestPipeline(
         gateway=gateway_service,
         conversation_service=conv_service,
@@ -151,7 +158,7 @@ def register_foundation_services(
             ContextCreationProcessor(),
             ConversationLoadingProcessor(conv_service),
             ProviderResolutionProcessor(),
-            PromptPlaceholderProcessor(prompt_service),
+            PromptPlaceholderProcessor(prompt_service, rag_service=rag_service),
             LLMInvocationProcessor(gateway_service),
             ResponseProcessingProcessor(),
             ConversationUpdateProcessor(conv_service),
