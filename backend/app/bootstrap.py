@@ -11,7 +11,10 @@ from backend.config import (
     get_container,
     get_settings,
 )
-from backend.core.ports import IConfigurationProvider
+from backend.core.ports import IConfigurationProvider, ILLMGateway
+from backend.llm_gateway import LLMGatewayService
+from backend.llm_gateway.providers import MockLLMProviderAdapter
+from backend.services import ChatService
 
 
 def configure_logging(settings: Settings) -> None:
@@ -59,6 +62,19 @@ def register_foundation_services(
         IConfigurationProvider, instance=config_provider  # type: ignore[type-abstract]
     )
 
+    # Register Mock Provider and LLM Gateway Service
+    mock_provider = MockLLMProviderAdapter()
+    gateway_service = LLMGatewayService()
+    gateway_service.router.register_provider(mock_provider)
+
+    container.register_singleton(
+        ILLMGateway, instance=gateway_service  # type: ignore[type-abstract]
+    )
+
+    # Register Application ChatService
+    chat_service = ChatService(gateway=gateway_service)
+    container.register_singleton(ChatService, instance=chat_service)
+
 
 def register_infrastructure_adapters(container: ServiceContainer) -> None:
     """Placeholder hook for future infrastructure adapter registrations.
@@ -66,8 +82,6 @@ def register_infrastructure_adapters(container: ServiceContainer) -> None:
     Args:
         container: Target ServiceContainer instance.
     """
-    # Infrastructure adapters (PostgreSQL, Redis, Qdrant, Neo4j, OpenAI)
-    # will be registered here in Milestone 2.
     pass
 
 
@@ -77,8 +91,6 @@ def register_runtime_engines(container: ServiceContainer) -> None:
     Args:
         container: Target ServiceContainer instance.
     """
-    # Platform runtimes (Workflow, Agent, Tool, RAG, Prompt, Gateway)
-    # will be registered here in Milestone 3-6.
     pass
 
 
@@ -101,7 +113,7 @@ def bootstrap_platform(
     # 1. Configure structured logging
     configure_logging(active_settings)
 
-    # 2. Register foundation services
+    # 2. Register foundation services and services
     register_foundation_services(active_container, active_settings)
 
     # 3. Register infrastructure adapters (placeholder hook)
