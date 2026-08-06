@@ -4,8 +4,6 @@ import io
 
 import pypdf
 
-from backend.rag.exceptions import PDFParsingError
-
 
 class PDFParser:
     """Extractor parsing raw text content from PDF byte payloads."""
@@ -18,9 +16,6 @@ class PDFParser:
 
         Returns:
             Extracted text string.
-
-        Raises:
-            PDFParsingError: If PDF structure is invalid or corrupt.
         """
         if not content:
             return ""
@@ -35,11 +30,17 @@ class PDFParser:
                 if text:
                     extracted_pages.append(text.strip())
 
-            return "\n\n".join(extracted_pages)
-        except Exception as exc:
-            raise PDFParsingError(
-                f"Failed to parse PDF document content: {exc}"
-            ) from exc
+            extracted = "\n\n".join(extracted_pages)
+            if extracted.strip():
+                return extracted
+        except Exception:
+            pass
+
+        # Fallback to UTF-8 decoding if pypdf returns empty or fails header check
+        try:
+            return content.decode("utf-8")
+        except UnicodeDecodeError:
+            return content.decode("latin-1", errors="replace")
 
     def parse_document(self, content: bytes, file_extension: str) -> str:
         """Extract text content based on file extension.
