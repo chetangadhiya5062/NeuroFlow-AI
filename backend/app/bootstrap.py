@@ -17,6 +17,12 @@ from backend.conversation import (
     IConversationRepository,
 )
 from backend.core.ports import IConfigurationProvider, ILLMGateway
+from backend.knowledge_base import (
+    IKnowledgeBaseRepository,
+    KnowledgeBaseRepositoryFactory,
+    KnowledgeBaseService,
+    LocalFileStorage,
+)
 from backend.llm_gateway import LLMGatewayService, ProviderFactory
 from backend.pipeline import AIRequestPipeline
 from backend.pipeline.processor import (
@@ -110,6 +116,17 @@ def register_foundation_services(
     )
     conv_service = ConversationService(repository=conv_repo)
     container.register_singleton(ConversationService, instance=conv_service)
+
+    # Register Knowledge Base dependencies
+    kb_repo = KnowledgeBaseRepositoryFactory.create_repository(storage_type="memory")
+    kb_storage = LocalFileStorage(base_directory="./data/documents")
+    kb_service = KnowledgeBaseService(repository=kb_repo, storage=kb_storage)
+
+    container.register_singleton(
+        IKnowledgeBaseRepository, instance=kb_repo  # type: ignore[type-abstract]
+    )
+    container.register_singleton(LocalFileStorage, instance=kb_storage)
+    container.register_singleton(KnowledgeBaseService, instance=kb_service)
 
     # Register Prompt Registry and Service
     prompt_registry = PromptRegistry()

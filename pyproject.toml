@@ -43,6 +43,7 @@ dependencies = [
     "pydantic-settings>=2.2.0",
     "structlog>=24.1.0",
     "typing-extensions>=4.11.0",
+    "python-multipart>=0.0.32",
 ]
 
 [dependency-groups]
