@@ -63,9 +63,9 @@ class MockLLMProviderAdapter(ILLMProviderAdapter):
 
         content = self._response_text or "Hello from NeuroFlow AI Mock Provider"
 
-        # Check if prompt contains Tool Result injection
-        if "Tool Result:" in prompt_content:
-            match = re.search(r"Tool Result:\s*([^\n]+)", prompt_content)
+        # Check if prompt contains Tool Result / Execution Result injection
+        if "Tool" in prompt_content and "Result" in prompt_content:
+            match = re.search(r"Result[^\:]*:\s*([^\n]+)", prompt_content)
             if match:
                 val = match.group(1).strip()
                 # Format numeric output nicely if possible

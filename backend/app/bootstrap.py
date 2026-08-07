@@ -177,21 +177,22 @@ def register_foundation_services(
     )
     container.register_singleton(AIRequestPipeline, instance=pipeline)
 
-    # Register Application ChatService delegating to pipeline
-    chat_service = ChatService(pipeline=pipeline)
-    container.register_singleton(ChatService, instance=chat_service)
-
     # Register Agent Runtime dependencies
     agent_engine = SingleAgent(
         gateway=gateway_service,
         tool_service=tool_service,
         rag_service=rag_service,
         conversation_service=conv_service,
+        prompt_service=prompt_service,
     )
     agent_service = AgentRuntimeService(agent=agent_engine)
 
     container.register_singleton(SingleAgent, instance=agent_engine)
     container.register_singleton(AgentRuntimeService, instance=agent_service)
+
+    # Register Application ChatService delegating to pipeline and agent_service
+    chat_service = ChatService(pipeline=pipeline, agent_service=agent_service)
+    container.register_singleton(ChatService, instance=chat_service)
 
 
 def register_infrastructure_adapters(container: ServiceContainer) -> None:

@@ -16,6 +16,7 @@ from backend.agent_runtime.reasoning import (
 from backend.conversation import ConversationService, MessageRole
 from backend.core.ports import ILLMGateway
 from backend.core.value_objects import EntityId, ModelIdentifier
+from backend.prompt_runtime import PromptService
 from backend.rag import RAGService
 from backend.tool_runtime import ToolService
 
@@ -29,12 +30,14 @@ class SingleAgent:
         tool_service: ToolService | None = None,
         rag_service: RAGService | None = None,
         conversation_service: ConversationService | None = None,
+        prompt_service: PromptService | None = None,
     ) -> None:
         """Initialize SingleAgent with platform runtime dependencies."""
         self._gateway = gateway
         self._tool_service = tool_service
         self._rag_service = rag_service
         self._conversation_service = conversation_service
+        self._prompt_service = prompt_service
 
     async def _decide_next_action(self, context: AgentContext) -> AgentAction:
         """Decide next action based on context state and query intent."""
@@ -170,10 +173,19 @@ class SingleAgent:
             )
 
         full_prompt = "\n\n".join(prompt_parts)
+
+        # Format prompt via PromptService if registered
+        if self._prompt_service is not None:
+            formatted_prompt = await self._prompt_service.format_user_prompt(
+                full_prompt
+            )
+        else:
+            formatted_prompt = full_prompt
+
         model_id = ModelIdentifier(name="mock-model", provider="mock")
 
         gen_res = await self._gateway.generate_text(
-            prompt=full_prompt, model=model_id
+            prompt=formatted_prompt, model=model_id
         )
         if gen_res.is_success:
             answer_text = gen_res.unwrap()
