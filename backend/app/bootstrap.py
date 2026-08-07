@@ -4,6 +4,7 @@ import logging
 
 import structlog
 
+from backend.agent_runtime import AgentRuntimeService, SingleAgent
 from backend.config import (
     PydanticConfigurationProvider,
     ServiceContainer,
@@ -179,6 +180,18 @@ def register_foundation_services(
     # Register Application ChatService delegating to pipeline
     chat_service = ChatService(pipeline=pipeline)
     container.register_singleton(ChatService, instance=chat_service)
+
+    # Register Agent Runtime dependencies
+    agent_engine = SingleAgent(
+        gateway=gateway_service,
+        tool_service=tool_service,
+        rag_service=rag_service,
+        conversation_service=conv_service,
+    )
+    agent_service = AgentRuntimeService(agent=agent_engine)
+
+    container.register_singleton(SingleAgent, instance=agent_engine)
+    container.register_singleton(AgentRuntimeService, instance=agent_service)
 
 
 def register_infrastructure_adapters(container: ServiceContainer) -> None:
