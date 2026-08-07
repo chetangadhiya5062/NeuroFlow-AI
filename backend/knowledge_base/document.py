@@ -16,6 +16,8 @@ class Document(AggregateRoot):
         storage_path: Local file path string where raw file is stored.
         metadata: Associated DocumentMetadata descriptor.
         tenant_id: Optional multi-tenant TenantId.
+        project_id: Optional parent Project EntityId.
+        workspace_id: Optional parent Workspace EntityId.
     """
 
     id: EntityId = field(default_factory=EntityId)
@@ -26,6 +28,8 @@ class Document(AggregateRoot):
         )
     )
     tenant_id: TenantId | None = None
+    project_id: EntityId | None = None
+    workspace_id: EntityId | None = None
 
     @classmethod
     def create(
@@ -33,6 +37,8 @@ class Document(AggregateRoot):
         storage_path: str,
         metadata: DocumentMetadata,
         tenant_id: TenantId | None = None,
+        project_id: EntityId | None = None,
+        workspace_id: EntityId | None = None,
     ) -> "Document":
         """Factory method constructing a new Document instance.
 
@@ -40,6 +46,8 @@ class Document(AggregateRoot):
             storage_path: Saved file path string.
             metadata: DocumentMetadata value object.
             tenant_id: Optional TenantId.
+            project_id: Optional Project EntityId.
+            workspace_id: Optional Workspace EntityId.
 
         Returns:
             Instantiated Document aggregate root.
@@ -49,4 +57,6 @@ class Document(AggregateRoot):
             storage_path=storage_path,
             metadata=metadata,
             tenant_id=tenant_id,
+            project_id=project_id,
+            workspace_id=workspace_id,
         )

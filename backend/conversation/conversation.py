@@ -17,6 +17,8 @@ class Conversation(AggregateRoot):
     Attributes:
         id: Unique EntityId for conversation.
         tenant_id: Optional multi-tenant TenantId.
+        project_id: Optional parent Project EntityId.
+        workspace_id: Optional parent Workspace EntityId.
         title: Optional conversation title header.
         messages: Mutable list of Message objects.
         metadata: Extensible metadata dictionary.
@@ -26,6 +28,8 @@ class Conversation(AggregateRoot):
 
     id: EntityId = field(default_factory=EntityId)
     tenant_id: TenantId | None = None
+    project_id: EntityId | None = None
+    workspace_id: EntityId | None = None
     title: str | None = None
     messages: list[Message] = field(default_factory=list)
     metadata: dict[str, Any] = field(default_factory=dict)
@@ -36,6 +40,8 @@ class Conversation(AggregateRoot):
     def create(
         cls,
         tenant_id: TenantId | None = None,
+        project_id: EntityId | None = None,
+        workspace_id: EntityId | None = None,
         title: str | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> "Conversation":
@@ -43,16 +49,20 @@ class Conversation(AggregateRoot):
 
         Args:
             tenant_id: Optional TenantId.
-            title: Optional title string.
+            project_id: Optional Project EntityId.
+            workspace_id: Optional Workspace EntityId.
+            title: Optional title.
             metadata: Optional metadata dictionary.
 
         Returns:
-            New Conversation AggregateRoot.
+            Instantiated Conversation aggregate root.
         """
         now = Timestamp()
         return cls(
             id=EntityId(),
             tenant_id=tenant_id,
+            project_id=project_id,
+            workspace_id=workspace_id,
             title=title,
             messages=[],
             metadata=metadata or {},
@@ -60,33 +70,46 @@ class Conversation(AggregateRoot):
             updated_at=now,
         )
 
+    def append_message(
+        self,
+        role: MessageRole | str,
+        content: str,
+        metadata: dict[str, Any] | None = None,
+    ) -> Message:
+        """Append a new Message to this conversation.
+
+        Args:
+            role: MessageRole enum or role string ('user', 'assistant', 'system').
+            content: Message body content.
+            metadata: Optional message metadata.
+
+        Returns:
+            Newly created and appended Message instance.
+
+        Raises:
+            InvalidMessageError: If message body content is empty.
+        """
+        if not content or not content.strip():
+            raise InvalidMessageError("Message content cannot be empty.")
+
+        message = Message.create(
+            role=role,
+            content=content,
+            metadata=metadata,
+        )
+        self.messages.append(message)
+        self.updated_at = Timestamp()
+        return message
+
     def add_message(
         self,
         role: MessageRole | str,
         content: str,
         metadata: dict[str, Any] | None = None,
     ) -> Message:
-        """Append a new message to the conversation sequence.
-
-        Args:
-            role: MessageRole enum or string.
-            content: Message content text string.
-            metadata: Optional message metadata.
-
-        Returns:
-            Appended Message object.
-
-        Raises:
-            InvalidMessageError: If content is empty or blank.
-        """
-        if not content or not content.strip():
-            raise InvalidMessageError("Message content cannot be empty.")
-
-        message = Message.create(role=role, content=content, metadata=metadata)
-        self.messages.append(message)
-        self.updated_at = Timestamp()
-        return message
+        """Alias for append_message."""
+        return self.append_message(role=role, content=content, metadata=metadata)
 
     def get_history(self) -> list[Message]:
-        """Return shallow copy of conversation message sequence."""
+        """Return shallow copy of conversation message history list."""
         return list(self.messages)

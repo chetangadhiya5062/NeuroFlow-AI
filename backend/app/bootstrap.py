@@ -37,6 +37,15 @@ from backend.pipeline.processor import (
     RequestValidationProcessor,
     ResponseProcessingProcessor,
 )
+from backend.platform_domain import (
+    InMemoryProjectRepository,
+    InMemoryUserRepository,
+    InMemoryWorkspaceRepository,
+    IProjectRepository,
+    IUserRepository,
+    IWorkspaceRepository,
+    PlatformDomainService,
+)
 from backend.prompt_runtime import (
     PromptBuilder,
     PromptRegistry,
@@ -140,6 +149,31 @@ def register_foundation_services(
     )
     container.register_singleton(LocalFileStorage, instance=kb_storage)
     container.register_singleton(KnowledgeBaseService, instance=kb_service)
+
+    # Register Platform Domain dependencies
+    user_repo = InMemoryUserRepository()
+    ws_repo = InMemoryWorkspaceRepository()
+    proj_repo = InMemoryProjectRepository()
+    platform_domain_service = PlatformDomainService(
+        user_repo=user_repo,
+        workspace_repo=ws_repo,
+        project_repo=proj_repo,
+        conversation_service=conv_service,
+        knowledge_service=kb_service,
+    )
+
+    container.register_singleton(
+        IUserRepository, instance=user_repo  # type: ignore[type-abstract]
+    )
+    container.register_singleton(
+        IWorkspaceRepository, instance=ws_repo  # type: ignore[type-abstract]
+    )
+    container.register_singleton(
+        IProjectRepository, instance=proj_repo  # type: ignore[type-abstract]
+    )
+    container.register_singleton(
+        PlatformDomainService, instance=platform_domain_service
+    )
 
     # Register Prompt Registry and Service
     prompt_registry = PromptRegistry()

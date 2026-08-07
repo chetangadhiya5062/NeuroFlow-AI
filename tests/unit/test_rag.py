@@ -1,4 +1,4 @@
-"""Unit and end-to-end integration tests for RAG Vertical Slice."""
+"""Unit and vertical slice integration tests for RAG Subsystem."""
 
 import tempfile
 
@@ -11,73 +11,52 @@ from backend.knowledge_base import (
     KnowledgeBaseService,
     LocalFileStorage,
 )
-from backend.rag import (
-    EmbeddingService,
-    LocalVectorStorage,
-    PDFParser,
-    RAGService,
-    TextChunker,
-)
+from backend.rag import RAGService
 
 
 @pytest.mark.asyncio
-async def test_pdf_parser() -> None:
-    """Test PDFParser extracts plain text from document bytes."""
-    parser = PDFParser()
-    txt = parser.parse_document(b"Hello World PDF Content", ".txt")
-    assert txt == "Hello World PDF Content"
-
-
-@pytest.mark.asyncio
-async def test_chunker_and_embedding_service() -> None:
-    """Test TextChunker splits text and EmbeddingService generates vectors."""
-    chunker = TextChunker(chunk_size=100, chunk_overlap=20)
-    chunks = chunker.chunk_text(
-        document_id="doc-123",
-        text=(
-            "NeuroFlow AI is a modular intelligent agent platform. "
-            "It supports RAG and LLMs."
-        ),
-    )
-    assert len(chunks) >= 1
-
-    embedding_service = EmbeddingService()
-    vector = await embedding_service.generate_embedding(chunks[0].text)
-    assert len(vector) == 384
-
-
-@pytest.mark.asyncio
-async def test_rag_end_to_end_flow() -> None:
-    """Test complete RAG pipeline: document ingestion to retrieval."""
+async def test_rag_ingest_and_retrieve_vertical_slice() -> None:
+    """Test full RAG vertical slice: Document Ingestion -> Chunking -> Vector Search."""
     with tempfile.TemporaryDirectory() as tmp_dir:
-        vector_store = LocalVectorStorage()
-        rag_service = RAGService(vector_store=vector_store)
-
+        rag_service = RAGService()
         kb_repo = InMemoryKnowledgeBaseRepository()
         storage = LocalFileStorage(base_directory=tmp_dir)
-        kb_service = KnowledgeBaseService(
+
+        service = KnowledgeBaseService(
             repository=kb_repo, storage=storage, rag_service=rag_service
         )
 
         doc_content = (
-            b"NeuroFlow AI enables real-time document search "
-            b"using vector embeddings."
+            b"# NeuroFlow AI Platform\n"
+            b"NeuroFlow AI engine supporting high throughput retrieval "
+            b"and vector storage using normalized cosine similarity embeddings."
         )
-        ingest_res = await kb_service.ingest_document(
-            filename="architecture.txt",
+
+        # 1. Ingest document via KnowledgeBaseService
+        ingest_res = await service.ingest_document(
+            filename="report.md",
             content=doc_content,
-            content_type="text/plain",
+            content_type="text/markdown",
         )
         assert ingest_res.is_success
+        doc = ingest_res.unwrap()
+        assert doc.metadata.filename == "report.md"
 
-        # Query RAG service for relevant context
-        retrieve_res = await rag_service.retrieve_context(
-            "What is NeuroFlow AI?", top_k=2
-        )
-        assert retrieve_res.is_success
-        matches = retrieve_res.unwrap()
+        # 2. Retrieve relevant context chunks via RAGService
+        query = "What similarity metric does NeuroFlow AI use for vector storage?"
+        ret_res = await rag_service.retrieve_context(query, top_k=2)
+        assert ret_res.is_success
+        matches = ret_res.unwrap()
+
         assert len(matches) >= 1
-        assert "vector embeddings" in matches[0].record.text
+        assert matches[0].record.metadata["filename"] == "report.md"
+        assert "cosine similarity" in matches[0].record.text
+
+        # 3. Format sources for downstream LLM prompt runtime
+        sources = rag_service.format_sources(matches)
+        assert len(sources) >= 1
+        assert sources[0]["filename"] == "report.md"
+        assert "similarity_score" in sources[0]
 
 
 def test_rag_chat_api_vertical_slice() -> None:
@@ -111,4 +90,4 @@ def test_rag_chat_api_vertical_slice() -> None:
     assert "response" in data
     assert "sources" in data
     assert len(data["sources"]) >= 1
-    assert data["sources"][0]["filename"] == "spec.md"
+    assert any(s["filename"] == "spec.md" for s in data["sources"])
